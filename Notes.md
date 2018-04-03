@@ -14,3 +14,6 @@ dotnet ef migrations add InitialCreate
 ```powershell
 dotnet ef database update
 ```
+
+## Seed data
+https://www.json-generator.com/
