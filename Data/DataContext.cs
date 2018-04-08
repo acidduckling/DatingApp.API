@@ -14,6 +14,11 @@ namespace DatingApp.API.Data
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
+            builder.Entity<User>()
+                .HasMany(p => p.Photos)
+                .WithOne(u => u.User)
+                .OnDelete(DeleteBehavior.Cascade);
+
             builder.Entity<Like>()
                 .HasKey(k => new { k.LikerId, k.LikeeId });
 
