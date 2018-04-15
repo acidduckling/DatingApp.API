@@ -17,38 +17,26 @@ namespace DatingApp.API.Controllers
     [Route("api/users/{userId}/[controller]")]
     public class MessagesController : Controller
     {
-        private readonly IDatingRepository _repo;
         private readonly IMapper _mapper;
+        private readonly IDatingRepository _repo;
         public MessagesController(IDatingRepository repo, IMapper mapper)
         {
-            _mapper = mapper;
             _repo = repo;
+            _mapper = mapper;
         }
 
-        [HttpGet("{id}", Name ="GetMessage")]
+        [HttpGet("{id}", Name = "GetMessage")]
         public async Task<IActionResult> GetMessage(int userId, int id)
         {
-            if(userId != int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value))
+            if (userId != int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value))
                 return Unauthorized();
 
             var messageFromRepo = await _repo.GetMessage(id);
 
-            if(messageFromRepo == null)
+            if (messageFromRepo == null)
                 return NotFound();
 
             return Ok(messageFromRepo);
-        }
-
-        [HttpGet("thread/{id}")]
-        public async Task<IActionResult> GetMessageThread(int userId, int id)
-        {
-            if(userId != int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value))
-                return Unauthorized();
-
-            var messagesFromRepo = await _repo.GetMessageThread(userId, id);
-            var messageThread = _mapper.Map<IEnumerable<MessageToReturnDto>>(messagesFromRepo);
-
-            return Ok(messageThread);
         }
 
         [HttpGet]
@@ -61,22 +49,35 @@ namespace DatingApp.API.Controllers
 
             var messages = _mapper.Map<IEnumerable<MessageToReturnDto>>(messagesFromRepo);
 
-            Response.AddPagination(messagesFromRepo.CurrentPage, messagesFromRepo.PageSize, 
-                messagesFromRepo.TotalCount, messagesFromRepo.TotalPages);
+            Response.AddPagination(messagesFromRepo.CurrentPage, 
+				messagesFromRepo.PageSize, messagesFromRepo.TotalCount, messagesFromRepo.TotalPages);
 
             return Ok(messages);
         }
+		
+        [HttpGet("thread/{id}")]
+        public async Task<IActionResult> GetMessageThread(int userId, int id)
+        {
+            if(userId != int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value))
+                return Unauthorized();
+
+            var messagesFromRepo = await _repo.GetMessageThread(userId, id);
+            var messageThread = _mapper.Map<IEnumerable<MessageToReturnDto>>(messagesFromRepo);
+
+            return Ok(messageThread);
+        }
 
         [HttpPost]
-        public async Task<IActionResult> CreateMessage(int userId, [FromBody] MessageForCreationDto messageForCreationDto)
+        public async Task<IActionResult> CreateMessage(int userId, 
+            [FromBody] MessageForCreationDto messageForCreationDto)
         {
             if(userId != int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value))
                 return Unauthorized();
 
             messageForCreationDto.SenderId = userId;
 
-            var recipient = _repo.GetUser(messageForCreationDto.RecipientId);
-            var sender = _repo.GetUser(messageForCreationDto.SenderId);
+            var recipient = await _repo.GetUser(messageForCreationDto.RecipientId);
+            var sender = await _repo.GetUser(messageForCreationDto.SenderId);
 
             if(recipient == null)
                 return BadRequest("Could not find user");
@@ -116,21 +117,21 @@ namespace DatingApp.API.Controllers
         }
 
         [HttpPost("{id}/read")]
-        public async Task<IActionResult> MarkMessagesRead(int userId, int id)
+        public async Task<IActionResult> MarkMessageAsRead(int userId, int id)
         {
-            if(userId != int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value))
+            if (userId != int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value))
                 return Unauthorized();
 
-            var message = await _repo.GetMessage(id);
+            var message= await _repo.GetMessage(id);
 
-            if(message.RecipientId != userId)
-                return BadRequest("Failed to mark message as read");
-
+            if (message.RecipientId != userId)
+                return BadRequest("failed to mark message as read");
+            
             message.IsRead = true;
             message.DateRead = DateTime.Now;
-            
-            await _repo.SaveAll();
 
+            await _repo.SaveAll();
+            
             return NoContent();
         }
     }

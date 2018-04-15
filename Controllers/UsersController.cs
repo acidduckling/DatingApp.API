@@ -26,7 +26,7 @@ namespace DatingApp.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetUsers(UserParams userParams)
+        public async Task<IActionResult> GetUsers([FromQuery]UserParams userParams)
         {
             var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
 
@@ -66,8 +66,8 @@ namespace DatingApp.API.Controllers
 
             var userFromRepo = await _repo.GetUser(id);
 
-            if(userFromRepo == null)
-                return NotFound($"Could not find user with ID {id}");
+            if (userFromRepo == null)
+                return NotFound($"Could not find user with an ID of {id}");
 
             if(currentUserId != userFromRepo.Id)
                 return Unauthorized();
@@ -77,7 +77,7 @@ namespace DatingApp.API.Controllers
             if(await _repo.SaveAll())
                 return NoContent();
 
-            throw new Exception($"Updating user with ID {id} failed on save");
+            throw new Exception($"Updating user {id} failed on save");
         }
 
         [HttpPost("{id}/like/{recipientId}")]
@@ -102,7 +102,7 @@ namespace DatingApp.API.Controllers
             _repo.Add<Like>(like);
 
             if(await _repo.SaveAll())
-                return Ok();
+                return Ok(new {});
 
             return BadRequest("Failed to add user");
         }
